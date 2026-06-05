@@ -28,9 +28,11 @@ def init_db():
                     id SERIAL PRIMARY KEY, 
                     url TEXT UNIQUE, 
                     status TEXT, 
-                    last_checked TIMESTAMP
+                    last_checked TIMESTAMP,
+                    paused BOOLEAN DEFAULT FALSE
                 )
             ''')
+            cur.execute('ALTER TABLE urls ADD COLUMN IF NOT EXISTS paused BOOLEAN DEFAULT FALSE')
         conn.commit()
 
 def send_gchat_alert(url, error_detail):
@@ -52,10 +54,12 @@ def monitor_loop():
     while True:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT id, url, status FROM urls")
+                cur.execute("SELECT id, url, status, paused FROM urls")
                 urls = cur.fetchall()
         
-        for url_id, url, prev_status in urls:
+        for url_id, url, prev_status, paused in urls:
+            if paused:
+                continue
             try:
                 resp = requests.head(url, timeout=5, allow_redirects=True)
                 if resp.status_code == 405:
@@ -93,7 +97,7 @@ def index():
 def get_urls():
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT id, url, status, TO_CHAR(last_checked, 'YYYY-MM-DD HH24:MI:SS') as last_checked FROM urls ORDER BY id DESC")
+            cur.execute("SELECT id, url, status, paused, TO_CHAR(last_checked, 'YYYY-MM-DD HH24:MI:SS') as last_checked FROM urls ORDER BY id DESC")
             urls = cur.fetchall()
     return jsonify(urls)
 
@@ -120,6 +124,19 @@ def delete_url(url_id):
             cur.execute("DELETE FROM urls WHERE id=%s", (url_id,))
         conn.commit()
     return jsonify({"message": "Deleted successfully"})
+
+@app.route('/api/urls/<int:url_id>/pause', methods=['PATCH'])
+def toggle_pause(url_id):
+    paused = request.json.get('paused')
+    if paused is None:
+        return jsonify({"error": "paused is required"}), 400
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE urls SET paused=%s WHERE id=%s RETURNING id", (bool(paused), url_id))
+            if not cur.fetchone():
+                return jsonify({"error": "URL not found"}), 404
+        conn.commit()
+    return jsonify({"message": "Paused" if paused else "Resumed"})
 
 if __name__ == '__main__':
     # Add a slight delay to allow the PostgreSQL container to boot up first

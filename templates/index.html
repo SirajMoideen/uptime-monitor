@@ -46,13 +46,19 @@
                 <tr>
                     <td class="align-middle">${item.url}</td>
                     <td class="align-middle">
-                        <span class="badge ${item.status === 'UP' ? 'bg-success' : item.status === 'DOWN' ? 'bg-danger' : 'bg-secondary'}">
-                            ${item.status}
-                        </span>
+                        ${item.paused
+                            ? '<span class="badge bg-warning text-dark">PAUSED</span>'
+                            : `<span class="badge ${item.status === 'UP' ? 'bg-success' : item.status === 'DOWN' ? 'bg-danger' : 'bg-secondary'}">${item.status}</span>`
+                        }
                     </td>
-                    <td class="align-middle text-muted small">${item.last_checked}</td>
-                    <td>
-                        <button onclick="deleteUrl(${item.id})" class="btn btn-sm btn-outline-danger">Delete</button>
+                    <td class="align-middle text-muted small">${item.paused ? '—' : (item.last_checked || '—')}</td>
+                    <td class="align-middle">
+                        <div class="d-flex gap-1">
+                            <button onclick="togglePause(${item.id}, ${!item.paused})" class="btn btn-sm ${item.paused ? 'btn-outline-success' : 'btn-outline-warning'}">
+                                ${item.paused ? 'Resume' : 'Pause'}
+                            </button>
+                            <button onclick="deleteUrl(${item.id})" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -72,6 +78,15 @@
 
         async function deleteUrl(id) {
             await fetch(`/api/urls/${id}`, { method: 'DELETE' });
+            fetchUrls();
+        }
+
+        async function togglePause(id, paused) {
+            await fetch(`/api/urls/${id}/pause`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({paused})
+            });
             fetchUrls();
         }
 

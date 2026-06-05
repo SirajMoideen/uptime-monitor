@@ -4,95 +4,589 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uptime Monitor</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:        #0a0c0f;
+            --surface:   #111318;
+            --surface2:  #181c22;
+            --border:    #1f2530;
+            --border2:   #2a3040;
+            --text:      #e2e8f0;
+            --muted:     #5a6478;
+            --accent:    #00e5a0;
+            --accent-dim:#00e5a020;
+            --danger:    #ff4d6d;
+            --danger-dim:#ff4d6d18;
+            --warn:      #ffc145;
+            --warn-dim:  #ffc14518;
+            --pending:   #7b8cde;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Subtle grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        /* ── HEADER ── */
+        header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .logo-icon svg { display: block; }
+
+        .logo-text {
+            font-family: 'Space Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text);
+        }
+
+        .logo-text span { color: var(--accent); }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* ── STATS ROW ── */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px 20px;
+            transition: border-color 0.2s;
+        }
+
+        .stat-card:hover { border-color: var(--border2); }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .stat-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-value.up    { color: var(--accent); }
+        .stat-value.down  { color: var(--danger); }
+        .stat-value.total { color: var(--text); }
+
+        /* ── ADD FORM ── */
+        .add-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .url-input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 11px 16px;
+            color: var(--text);
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .url-input::placeholder { color: var(--muted); }
+
+        .url-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .btn-add {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            padding: 11px 22px;
+            color: #000;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.15s, transform 0.1s;
+        }
+
+        .btn-add:hover   { opacity: 0.88; }
+        .btn-add:active  { transform: scale(0.97); }
+
+        /* ── TABLE PANEL ── */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 4px 10px;
+            color: var(--muted);
+            font-size: 11px;
+            font-family: 'Space Mono', monospace;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            padding: 10px 20px;
+            text-align: left;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            background: var(--surface2);
+            font-weight: 400;
+        }
+
+        tbody tr {
+            border-top: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        tbody tr:hover { background: var(--surface2); }
+
+        td {
+            padding: 14px 20px;
+            vertical-align: middle;
+        }
+
+        .url-cell {
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+            max-width: 340px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* ── BADGES ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .badge-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .badge.up      { background: var(--accent-dim);  color: var(--accent);  border: 1px solid #00e5a030; }
+        .badge.down    { background: var(--danger-dim);  color: var(--danger);  border: 1px solid #ff4d6d30; }
+        .badge.paused  { background: var(--warn-dim);    color: var(--warn);    border: 1px solid #ffc14530; }
+        .badge.pending { background: #7b8cde18;          color: var(--pending); border: 1px solid #7b8cde30; }
+
+        .badge.up      .badge-dot { background: var(--accent);  animation: pulse 2s ease-in-out infinite; }
+        .badge.down    .badge-dot { background: var(--danger); }
+        .badge.paused  .badge-dot { background: var(--warn); }
+        .badge.pending .badge-dot { background: var(--pending); animation: pulse 1.5s ease-in-out infinite; }
+
+        /* ── TIME ── */
+        .time-cell {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        /* ── ACTIONS ── */
+        .actions { display: flex; gap: 6px; }
+
+        .btn-action {
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: none;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn-action:active { transform: scale(0.95); }
+
+        .btn-pause  { color: var(--warn);   }
+        .btn-resume { color: var(--accent); }
+        .btn-delete { color: var(--danger); }
+
+        .btn-pause:hover  { background: var(--warn-dim);   border-color: var(--warn); }
+        .btn-resume:hover { background: var(--accent-dim); border-color: var(--accent); }
+        .btn-delete:hover { background: var(--danger-dim); border-color: var(--danger); }
+
+        /* ── EMPTY STATE ── */
+        .empty-state {
+            padding: 64px 20px;
+            text-align: center;
+        }
+
+        .empty-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .empty-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .empty-sub {
+            font-size: 12px;
+            color: var(--muted);
+            opacity: 0.6;
+        }
+
+        /* ── TOAST ── */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .toast {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-family: 'Space Mono', monospace;
+            color: var(--text);
+            animation: slide-in 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.success { border-color: var(--accent); color: var(--accent); }
+
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(3, 1fr); }
+            .stat-value { font-size: 22px; }
+            .add-form { flex-direction: column; }
+            thead th:nth-child(3), td:nth-child(3) { display: none; }
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h2 class="mb-4">🌐 Uptime Monitor</h2>
-        
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body">
-                <form id="addForm" class="d-flex gap-2">
-                    <input type="url" id="urlInput" class="form-control" placeholder="https://example.com" required>
-                    <button type="submit" class="btn btn-primary">Add Monitor</button>
-                </form>
+<body>
+
+<div class="wrapper">
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <circle cx="9" cy="9" r="3" fill="#000"/>
+                    <path d="M9 2a7 7 0 1 1 0 14A7 7 0 0 1 9 2" stroke="#000" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/>
+                </svg>
+            </div>
+            <div>
+                <div class="logo-text">uptime<span>.</span>monitor</div>
             </div>
         </div>
+        <div class="header-meta">
+            <div class="pulse-dot"></div>
+            <span id="lastRefreshLabel">checking...</span>
+        </div>
+    </header>
 
-        <div class="card shadow-sm">
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>URL</th>
-                            <th>Status</th>
-                            <th>Last Checked</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="urlList">
-                        </tbody>
-                </table>
-            </div>
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-label">Total</div>
+            <div class="stat-value total" id="statTotal">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Online</div>
+            <div class="stat-value up" id="statUp">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Down</div>
+            <div class="stat-value down" id="statDown">—</div>
         </div>
     </div>
 
-    <script>
-        async function fetchUrls() {
-            const res = await fetch('/api/urls');
-            const data = await res.json();
-            const tbody = document.getElementById('urlList');
-            tbody.innerHTML = data.map(item => `
-                <tr>
-                    <td class="align-middle">${item.url}</td>
-                    <td class="align-middle">
-                        ${item.paused
-                            ? '<span class="badge bg-warning text-dark">PAUSED</span>'
-                            : `<span class="badge ${item.status === 'UP' ? 'bg-success' : item.status === 'DOWN' ? 'bg-danger' : 'bg-secondary'}">${item.status}</span>`
-                        }
-                    </td>
-                    <td class="align-middle text-muted small">${item.paused ? '—' : (item.last_checked || '—')}</td>
-                    <td class="align-middle">
-                        <div class="d-flex gap-1">
-                            <button onclick="togglePause(${item.id}, ${!item.paused})" class="btn btn-sm ${item.paused ? 'btn-outline-success' : 'btn-outline-warning'}">
-                                ${item.paused ? 'Resume' : 'Pause'}
-                            </button>
-                            <button onclick="deleteUrl(${item.id})" class="btn btn-sm btn-outline-danger">Delete</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    <!-- Add form -->
+    <form class="add-form" id="addForm">
+        <input class="url-input" id="urlInput" type="url" placeholder="https://example.com" required autocomplete="off">
+        <button class="btn-add" type="submit">+ Add Monitor</button>
+    </form>
 
-        document.getElementById('addForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const url = document.getElementById('urlInput').value;
-            await fetch('/api/urls', {
+    <!-- Table panel -->
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-title">Monitors</span>
+            <button class="refresh-btn" onclick="fetchUrls()">↻ Refresh</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Endpoint</th>
+                    <th>Status</th>
+                    <th>Last Check</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="urlList"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    let urlData = [];
+
+    function showToast(msg, type = '') {
+        const el = document.createElement('div');
+        el.className = 'toast ' + type;
+        el.textContent = msg;
+        document.getElementById('toastContainer').appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    }
+
+    function badgeHTML(item) {
+        if (item.paused) return `<span class="badge paused"><span class="badge-dot"></span>PAUSED</span>`;
+        const map = { UP: 'up', DOWN: 'down', PENDING: 'pending' };
+        const cls = map[item.status] || 'pending';
+        return `<span class="badge ${cls}"><span class="badge-dot"></span>${item.status || 'PENDING'}</span>`;
+    }
+
+    async function fetchUrls() {
+        try {
+            const res = await fetch('/api/urls');
+            urlData = await res.json();
+            renderTable();
+            updateStats();
+            const now = new Date();
+            document.getElementById('lastRefreshLabel').textContent =
+                'updated ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        } catch (e) {
+            showToast('Failed to fetch data', 'error');
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('urlList');
+        if (!urlData.length) {
+            tbody.innerHTML = `
+                <tr><td colspan="4">
+                    <div class="empty-state">
+                        <div class="empty-icon">◉</div>
+                        <div class="empty-title">No monitors yet</div>
+                        <div class="empty-sub">Add a URL above to start monitoring</div>
+                    </div>
+                </td></tr>`;
+            return;
+        }
+        tbody.innerHTML = urlData.map(item => `
+            <tr>
+                <td class="url-cell" title="${item.url}">${item.url}</td>
+                <td>${badgeHTML(item)}</td>
+                <td class="time-cell">${item.paused ? '—' : (item.last_checked || '—')}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn-action ${item.paused ? 'btn-resume' : 'btn-pause'}"
+                            onclick="togglePause(${item.id}, ${!item.paused})">
+                            ${item.paused ? 'Resume' : 'Pause'}
+                        </button>
+                        <button class="btn-action btn-delete" onclick="deleteUrl(${item.id})">Delete</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function updateStats() {
+        const active = urlData.filter(u => !u.paused);
+        document.getElementById('statTotal').textContent = urlData.length;
+        document.getElementById('statUp').textContent   = active.filter(u => u.status === 'UP').length;
+        document.getElementById('statDown').textContent  = active.filter(u => u.status === 'DOWN').length;
+    }
+
+    document.getElementById('addForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const url = document.getElementById('urlInput').value.trim();
+        const btn = e.target.querySelector('button');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/urls', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({url})
             });
-            document.getElementById('urlInput').value = '';
-            fetchUrls();
-        };
+            const data = await res.json();
+            if (!res.ok) { showToast(data.error || 'Error adding URL', 'error'); }
+            else { showToast('Monitor added', 'success'); document.getElementById('urlInput').value = ''; fetchUrls(); }
+        } catch { showToast('Network error', 'error'); }
+        btn.disabled = false;
+    };
 
-        async function deleteUrl(id) {
-            await fetch(`/api/urls/${id}`, { method: 'DELETE' });
-            fetchUrls();
-        }
-
-        async function togglePause(id, paused) {
-            await fetch(`/api/urls/${id}/pause`, {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({paused})
-            });
-            fetchUrls();
-        }
-
-        // Fetch immediately, then poll every 10 seconds to update the UI
+    async function deleteUrl(id) {
+        await fetch(`/api/urls/${id}`, { method: 'DELETE' });
+        showToast('Monitor removed');
         fetchUrls();
-        setInterval(fetchUrls, 10000);
-    </script>
+    }
+
+    async function togglePause(id, paused) {
+        await fetch(`/api/urls/${id}/pause`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({paused})
+        });
+        showToast(paused ? 'Monitor paused' : 'Monitor resumed');
+        fetchUrls();
+    }
+
+    fetchUrls();
+    setInterval(fetchUrls, 10000);
+</script>
 </body>
 </html>

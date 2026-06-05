@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uptime-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uptime-monitor
+  template:
+    metadata:
+      labels:
+        app: uptime-monitor
+    spec:
+      containers:
+      - name: uptime-monitor
+        image: uptime-monitor:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - secretRef:
+            name: uptime-monitor-secret

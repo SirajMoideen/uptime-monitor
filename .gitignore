@@ -10,3 +10,5 @@ __pycache__/
 # IDEs
 .vscode/
 .idea/
+
+k8s/*secret.yaml

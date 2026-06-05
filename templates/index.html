@@ -35,7 +35,6 @@
             overflow-x: hidden;
         }
 
-        /* Subtle grid background */
         body::before {
             content: '';
             position: fixed;
@@ -52,7 +51,7 @@
         .wrapper {
             position: relative;
             z-index: 1;
-            max-width: 960px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 48px 24px 80px;
         }
@@ -67,63 +66,43 @@
             flex-wrap: wrap;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .logo { display: flex; align-items: center; gap: 12px; }
 
         .logo-icon {
-            width: 36px;
-            height: 36px;
+            width: 36px; height: 36px;
             border-radius: 8px;
             background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
         }
-
-        .logo-icon svg { display: block; }
 
         .logo-text {
             font-family: 'Space Mono', monospace;
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            color: var(--text);
+            font-size: 16px; font-weight: 700; letter-spacing: -0.5px;
         }
-
         .logo-text span { color: var(--accent); }
 
         .header-meta {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            display: flex; align-items: center; gap: 8px;
             padding: 6px 12px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 6px;
             font-family: 'Space Mono', monospace;
-            font-size: 11px;
-            color: var(--muted);
+            font-size: 11px; color: var(--muted);
         }
 
         .pulse-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
+            width: 6px; height: 6px; border-radius: 50%;
             background: var(--accent);
             animation: pulse 2s ease-in-out infinite;
-            flex-shrink: 0;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.4; transform: scale(0.8); }
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:.4; transform:scale(.8); }
         }
 
-        /* ── STATS ROW ── */
+        /* ── STATS ── */
         .stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -136,56 +115,155 @@
             border: 1px solid var(--border);
             border-radius: 10px;
             padding: 18px 20px;
-            transition: border-color 0.2s;
+            transition: border-color .2s;
         }
-
         .stat-card:hover { border-color: var(--border2); }
 
         .stat-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--muted);
-            margin-bottom: 8px;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--muted); margin-bottom: 8px;
             font-family: 'Space Mono', monospace;
         }
 
         .stat-value {
             font-family: 'Space Mono', monospace;
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1;
+            font-size: 28px; font-weight: 700; line-height: 1;
         }
-
         .stat-value.up    { color: var(--accent); }
         .stat-value.down  { color: var(--danger); }
         .stat-value.total { color: var(--text); }
 
         /* ── ADD FORM ── */
-        .add-form {
-            display: flex;
-            gap: 10px;
+        .add-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 24px;
         }
 
-        .url-input {
-            flex: 1;
-            background: var(--surface);
+        .add-card-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--muted); margin-bottom: 14px;
+        }
+
+        .add-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Type selector tabs */
+        .type-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 11px 16px;
+            padding: 4px;
+            flex-shrink: 0;
+        }
+
+        .type-tab {
+            border: none;
+            background: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            cursor: pointer;
+            transition: background .15s, color .15s;
+            white-space: nowrap;
+        }
+
+        .type-tab:hover { color: var(--text); }
+
+        .type-tab.active {
+            background: var(--border2);
+            color: var(--accent);
+        }
+
+        /* Input group: host + optional port */
+        .input-group {
+            display: flex;
+            flex: 1;
+            min-width: 200px;
+            gap: 0;
+        }
+
+        .scheme-prefix {
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .host-input {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 11px 14px;
             color: var(--text);
             font-family: 'Space Mono', monospace;
             font-size: 13px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color .2s, box-shadow .2s;
+            min-width: 0;
         }
 
-        .url-input::placeholder { color: var(--muted); }
-
-        .url-input:focus {
+        .host-input:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        /* no prefix = rounded left too */
+        .host-input.no-prefix { border-radius: 8px 0 0 8px; }
+
+        .port-input {
+            width: 86px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-left: none;
+            padding: 11px 12px;
+            color: var(--text);
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .port-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        /* last visible input in the group gets rounded right */
+        .input-group > *:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .port-hint {
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
         }
 
         .btn-add {
@@ -199,11 +277,20 @@
             font-size: 13px;
             cursor: pointer;
             white-space: nowrap;
-            transition: opacity 0.15s, transform 0.1s;
+            transition: opacity .15s, transform .1s;
+            flex-shrink: 0;
+            align-self: flex-start;
         }
+        .btn-add:hover  { opacity: .88; }
+        .btn-add:active { transform: scale(.97); }
+        .btn-add:disabled { opacity: .5; cursor: not-allowed; }
 
-        .btn-add:hover   { opacity: 0.88; }
-        .btn-add:active  { transform: scale(0.97); }
+        .add-hint {
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--muted);
+            font-family: 'Space Mono', monospace;
+        }
 
         /* ── TABLE PANEL ── */
         .panel {
@@ -214,18 +301,14 @@
         }
 
         .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            display: flex; align-items: center; justify-content: space-between;
             padding: 14px 20px;
             border-bottom: 1px solid var(--border);
         }
 
         .panel-title {
             font-family: 'Space Mono', monospace;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
             color: var(--muted);
         }
 
@@ -238,70 +321,63 @@
             font-size: 11px;
             font-family: 'Space Mono', monospace;
             cursor: pointer;
-            transition: border-color 0.2s, color 0.2s;
+            transition: border-color .2s, color .2s;
         }
-
         .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+        table { width: 100%; border-collapse: collapse; }
 
         thead th {
             padding: 10px 20px;
             text-align: left;
             font-family: 'Space Mono', monospace;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
             color: var(--muted);
             background: var(--surface2);
             font-weight: 400;
         }
 
-        tbody tr {
-            border-top: 1px solid var(--border);
-            transition: background 0.15s;
-        }
-
+        tbody tr { border-top: 1px solid var(--border); transition: background .15s; }
         tbody tr:hover { background: var(--surface2); }
 
-        td {
-            padding: 14px 20px;
-            vertical-align: middle;
-        }
+        td { padding: 13px 20px; vertical-align: middle; }
 
         .url-cell {
             font-family: 'Space Mono', monospace;
-            font-size: 12px;
-            color: var(--text);
-            max-width: 340px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-size: 12px; color: var(--text);
+            max-width: 300px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
 
-        /* ── BADGES ── */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 3px 10px;
+        /* check-type chip */
+        .type-chip {
+            display: inline-block;
+            padding: 2px 8px;
             border-radius: 4px;
             font-family: 'Space Mono', monospace;
             font-size: 10px;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--muted);
+        }
+        .type-chip.http  { color: #60a5fa; border-color: #60a5fa30; background: #60a5fa10; }
+        .type-chip.https { color: var(--accent); border-color: #00e5a030; background: var(--accent-dim); }
+        .type-chip.ping  { color: #c084fc; border-color: #c084fc30; background: #c084fc10; }
+        .type-chip.tcp   { color: var(--warn); border-color: #ffc14530; background: var(--warn-dim); }
+
+        /* status badges */
+        .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px; font-weight: 700; letter-spacing: .5px;
             white-space: nowrap;
         }
-
-        .badge-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
+        .badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 
         .badge.up      { background: var(--accent-dim);  color: var(--accent);  border: 1px solid #00e5a030; }
         .badge.down    { background: var(--danger-dim);  color: var(--danger);  border: 1px solid #ff4d6d30; }
@@ -313,15 +389,11 @@
         .badge.paused  .badge-dot { background: var(--warn); }
         .badge.pending .badge-dot { background: var(--pending); animation: pulse 1.5s ease-in-out infinite; }
 
-        /* ── TIME ── */
         .time-cell {
             font-family: 'Space Mono', monospace;
-            font-size: 11px;
-            color: var(--muted);
-            white-space: nowrap;
+            font-size: 11px; color: var(--muted); white-space: nowrap;
         }
 
-        /* ── ACTIONS ── */
         .actions { display: flex; gap: 6px; }
 
         .btn-action {
@@ -333,56 +405,28 @@
             font-family: 'DM Sans', sans-serif;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+            transition: background .15s, border-color .15s, color .15s, transform .1s;
             white-space: nowrap;
+            color: var(--muted);
         }
+        .btn-action:active { transform: scale(.95); }
 
-        .btn-action:active { transform: scale(0.95); }
-
-        .btn-pause  { color: var(--warn);   }
-        .btn-resume { color: var(--accent); }
-        .btn-delete { color: var(--danger); }
-
-        .btn-pause:hover  { background: var(--warn-dim);   border-color: var(--warn); }
-        .btn-resume:hover { background: var(--accent-dim); border-color: var(--accent); }
-        .btn-delete:hover { background: var(--danger-dim); border-color: var(--danger); }
+        .btn-pause:hover  { background: var(--warn-dim);   border-color: var(--warn);   color: var(--warn); }
+        .btn-resume:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+        .btn-delete:hover { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
 
         /* ── EMPTY STATE ── */
-        .empty-state {
-            padding: 64px 20px;
-            text-align: center;
-        }
-
-        .empty-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
-            opacity: 0.3;
-        }
-
-        .empty-title {
-            font-family: 'Space Mono', monospace;
-            font-size: 13px;
-            color: var(--muted);
-            margin-bottom: 4px;
-        }
-
-        .empty-sub {
-            font-size: 12px;
-            color: var(--muted);
-            opacity: 0.6;
-        }
+        .empty-state { padding: 64px 20px; text-align: center; }
+        .empty-icon  { font-size: 32px; margin-bottom: 12px; opacity: .3; }
+        .empty-title { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+        .empty-sub   { font-size: 12px; color: var(--muted); opacity: .6; }
 
         /* ── TOAST ── */
         .toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            position: fixed; bottom: 24px; right: 24px;
+            display: flex; flex-direction: column; gap: 8px;
             z-index: 100;
         }
-
         .toast {
             background: var(--surface2);
             border: 1px solid var(--border2);
@@ -391,13 +435,9 @@
             font-size: 13px;
             font-family: 'Space Mono', monospace;
             color: var(--text);
-            animation: slide-in 0.25s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            animation: slide-in .25s ease;
         }
-
-        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.error   { border-color: var(--danger); color: var(--danger); }
         .toast.success { border-color: var(--accent); color: var(--accent); }
 
         @keyframes slide-in {
@@ -405,18 +445,18 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* ── RESPONSIVE ── */
-        @media (max-width: 600px) {
-            .stats { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 640px) {
             .stat-value { font-size: 22px; }
-            .add-form { flex-direction: column; }
-            thead th:nth-child(3), td:nth-child(3) { display: none; }
+            .add-row { flex-direction: column; }
+            thead th:nth-child(3), td:nth-child(3),
+            thead th:nth-child(4), td:nth-child(4) { display: none; }
         }
     </style>
 </head>
 <body>
 
 <div class="wrapper">
+
     <!-- Header -->
     <header>
         <div class="logo">
@@ -426,9 +466,7 @@
                     <path d="M9 2a7 7 0 1 1 0 14A7 7 0 0 1 9 2" stroke="#000" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/>
                 </svg>
             </div>
-            <div>
-                <div class="logo-text">uptime<span>.</span>monitor</div>
-            </div>
+            <div class="logo-text">uptime<span>.</span>monitor</div>
         </div>
         <div class="header-meta">
             <div class="pulse-dot"></div>
@@ -453,12 +491,35 @@
     </div>
 
     <!-- Add form -->
-    <form class="add-form" id="addForm">
-        <input class="url-input" id="urlInput" type="url" placeholder="https://example.com" required autocomplete="off">
-        <button class="btn-add" type="submit">+ Add Monitor</button>
-    </form>
+    <div class="add-card">
+        <div class="add-card-title">Add Monitor</div>
+        <form id="addForm">
+            <div class="add-row">
 
-    <!-- Table panel -->
+                <!-- Protocol selector -->
+                <div class="type-tabs" id="typeTabs">
+                    <button type="button" class="type-tab active" data-type="https">HTTPS</button>
+                    <button type="button" class="type-tab"        data-type="http">HTTP</button>
+                    <button type="button" class="type-tab"        data-type="ping">PING</button>
+                    <button type="button" class="type-tab"        data-type="tcp">TCP</button>
+                </div>
+
+                <!-- Dynamic input group -->
+                <div class="input-group" id="inputGroup">
+                    <span class="scheme-prefix" id="schemePrefix">https://</span>
+                    <input class="host-input" id="hostInput" type="text"
+                           placeholder="192.168.0.100 or example.com" autocomplete="off" required>
+                    <input class="port-input" id="portInput" type="number"
+                           placeholder="port" min="1" max="65535">
+                </div>
+
+                <button class="btn-add" type="submit" id="addBtn">+ Add Monitor</button>
+            </div>
+            <div class="add-hint" id="addHint">https://host[:port] — SSL errors on self-signed certs are handled automatically</div>
+        </form>
+    </div>
+
+    <!-- Table -->
     <div class="panel">
         <div class="panel-header">
             <span class="panel-title">Monitors</span>
@@ -468,6 +529,7 @@
             <thead>
                 <tr>
                     <th>Endpoint</th>
+                    <th>Type</th>
                     <th>Status</th>
                     <th>Last Check</th>
                     <th>Actions</th>
@@ -476,13 +538,70 @@
             <tbody id="urlList"></tbody>
         </table>
     </div>
+
 </div>
 
-<!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-    let urlData = [];
+    let urlData     = [];
+    let activeType  = 'https';
+
+    // ── Type tab logic ─────────────────────────────────────────────────────
+
+    const HINTS = {
+        https: 'https://host[:port] — SSL errors on self-signed certs are handled automatically',
+        http:  'http://host[:port]',
+        ping:  'Enter a hostname or IP address — ICMP ping (no port needed)',
+        tcp:   'Enter host and port — raw TCP socket check (e.g. for databases, MQTT, custom services)',
+    };
+
+    const PLACEHOLDERS = {
+        https: '192.168.0.100 or example.com',
+        http:  '192.168.0.100 or example.com',
+        ping:  '192.168.0.100 or hostname',
+        tcp:   '192.168.0.100 or hostname',
+    };
+
+    document.getElementById('typeTabs').addEventListener('click', e => {
+        const tab = e.target.closest('.type-tab');
+        if (!tab) return;
+        activeType = tab.dataset.type;
+        document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        updateInputGroup();
+    });
+
+    function updateInputGroup() {
+        const prefix    = document.getElementById('schemePrefix');
+        const host      = document.getElementById('hostInput');
+        const port      = document.getElementById('portInput');
+        const hint      = document.getElementById('addHint');
+
+        host.placeholder = PLACEHOLDERS[activeType];
+        hint.textContent  = HINTS[activeType];
+
+        if (activeType === 'https' || activeType === 'http') {
+            prefix.style.display = '';
+            prefix.textContent   = activeType + '://';
+            host.classList.remove('no-prefix');
+            port.style.display   = '';
+        } else if (activeType === 'ping') {
+            prefix.style.display = 'none';
+            host.classList.add('no-prefix');
+            port.style.display   = 'none';
+            // make sure host gets rounded right too when no port
+            host.style.borderRadius = '0 8px 8px 0';
+        } else {
+            // tcp
+            prefix.style.display = 'none';
+            host.classList.add('no-prefix');
+            host.style.borderRadius = '';
+            port.style.display   = '';
+        }
+    }
+
+    // ── Fetch & render ─────────────────────────────────────────────────────
 
     function showToast(msg, type = '') {
         const el = document.createElement('div');
@@ -494,9 +613,14 @@
 
     function badgeHTML(item) {
         if (item.paused) return `<span class="badge paused"><span class="badge-dot"></span>PAUSED</span>`;
-        const map = { UP: 'up', DOWN: 'down', PENDING: 'pending' };
+        const map = { UP:'up', DOWN:'down', PENDING:'pending' };
         const cls = map[item.status] || 'pending';
         return `<span class="badge ${cls}"><span class="badge-dot"></span>${item.status || 'PENDING'}</span>`;
+    }
+
+    function typeChip(ct) {
+        const t = (ct || 'http').toLowerCase();
+        return `<span class="type-chip ${t}">${t.toUpperCase()}</span>`;
     }
 
     async function fetchUrls() {
@@ -508,27 +632,24 @@
             const now = new Date();
             document.getElementById('lastRefreshLabel').textContent =
                 'updated ' + now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-        } catch (e) {
-            showToast('Failed to fetch data', 'error');
-        }
+        } catch { showToast('Failed to fetch data', 'error'); }
     }
 
     function renderTable() {
         const tbody = document.getElementById('urlList');
         if (!urlData.length) {
-            tbody.innerHTML = `
-                <tr><td colspan="4">
-                    <div class="empty-state">
-                        <div class="empty-icon">◉</div>
-                        <div class="empty-title">No monitors yet</div>
-                        <div class="empty-sub">Add a URL above to start monitoring</div>
-                    </div>
-                </td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5">
+                <div class="empty-state">
+                    <div class="empty-icon">◉</div>
+                    <div class="empty-title">No monitors yet</div>
+                    <div class="empty-sub">Add a URL, IP, or hostname above</div>
+                </div></td></tr>`;
             return;
         }
         tbody.innerHTML = urlData.map(item => `
             <tr>
                 <td class="url-cell" title="${item.url}">${item.url}</td>
+                <td>${typeChip(item.check_type)}</td>
                 <td>${badgeHTML(item)}</td>
                 <td class="time-cell">${item.paused ? '—' : (item.last_checked || '—')}</td>
                 <td>
@@ -540,34 +661,58 @@
                         <button class="btn-action btn-delete" onclick="deleteUrl(${item.id})">Delete</button>
                     </div>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`).join('');
     }
 
     function updateStats() {
         const active = urlData.filter(u => !u.paused);
         document.getElementById('statTotal').textContent = urlData.length;
-        document.getElementById('statUp').textContent   = active.filter(u => u.status === 'UP').length;
+        document.getElementById('statUp').textContent    = active.filter(u => u.status === 'UP').length;
         document.getElementById('statDown').textContent  = active.filter(u => u.status === 'DOWN').length;
     }
 
-    document.getElementById('addForm').onsubmit = async (e) => {
+    // ── Form submit ────────────────────────────────────────────────────────
+
+    document.getElementById('addForm').onsubmit = async e => {
         e.preventDefault();
-        const url = document.getElementById('urlInput').value.trim();
-        const btn = e.target.querySelector('button');
+        const host = document.getElementById('hostInput').value.trim();
+        const port = document.getElementById('portInput').value.trim();
+        const btn  = document.getElementById('addBtn');
+
+        if (!host) { showToast('Host is required', 'error'); return; }
+
+        // Build the URL string to send
+        let url;
+        if (activeType === 'ping') {
+            url = host;
+        } else if (activeType === 'tcp') {
+            if (!port) { showToast('Port is required for TCP checks', 'error'); return; }
+            url = `${host}:${port}`;
+        } else {
+            // http / https — backend will prepend scheme if missing
+            url = port ? `${host}:${port}` : host;
+        }
+
         btn.disabled = true;
         try {
             const res = await fetch('/api/urls', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url})
+                body: JSON.stringify({ url, check_type: activeType })
             });
             const data = await res.json();
-            if (!res.ok) { showToast(data.error || 'Error adding URL', 'error'); }
-            else { showToast('Monitor added', 'success'); document.getElementById('urlInput').value = ''; fetchUrls(); }
+            if (!res.ok) { showToast(data.error || 'Error adding monitor', 'error'); }
+            else {
+                showToast('Monitor added', 'success');
+                document.getElementById('hostInput').value = '';
+                document.getElementById('portInput').value = '';
+                fetchUrls();
+            }
         } catch { showToast('Network error', 'error'); }
         btn.disabled = false;
     };
+
+    // ── Actions ────────────────────────────────────────────────────────────
 
     async function deleteUrl(id) {
         await fetch(`/api/urls/${id}`, { method: 'DELETE' });
@@ -585,6 +730,8 @@
         fetchUrls();
     }
 
+    // Init
+    updateInputGroup();
     fetchUrls();
     setInterval(fetchUrls, 10000);
 </script>

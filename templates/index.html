@@ -413,7 +413,116 @@
 
         .btn-pause:hover  { background: var(--warn-dim);   border-color: var(--warn);   color: var(--warn); }
         .btn-resume:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+        .btn-edit:hover   { background: var(--surface2);   border-color: var(--border2); color: var(--text); }
         .btn-delete:hover { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+
+        .ssl-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--muted);
+            cursor: pointer;
+            user-select: none;
+        }
+        .ssl-option input { accent-color: var(--accent); cursor: pointer; }
+
+        .ssl-badge {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-family: 'Space Mono', monospace;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .3px;
+            text-transform: uppercase;
+            color: var(--warn);
+            background: var(--warn-dim);
+            border: 1px solid #ffc14530;
+            vertical-align: middle;
+        }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #00000088;
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 560px;
+            padding: 24px;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 4px;
+        }
+        .modal-close:hover { color: var(--text); }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 18px;
+            color: var(--muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-cancel:hover { border-color: var(--border2); color: var(--text); }
+
+        .btn-save {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            color: #000;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-save:hover { opacity: .88; }
+        .btn-save:disabled { opacity: .5; cursor: not-allowed; }
 
         /* ── EMPTY STATE ── */
         .empty-state { padding: 64px 20px; text-align: center; }
@@ -515,8 +624,46 @@
 
                 <button class="btn-add" type="submit" id="addBtn">+ Add Monitor</button>
             </div>
-            <div class="add-hint" id="addHint">https://host[:port] — SSL errors on self-signed certs are handled automatically</div>
+            <label class="ssl-option" id="sslOption" style="display:none">
+                <input type="checkbox" id="ignoreSslInput">
+                Ignore SSL certificate errors (self-signed / invalid certs)
+            </label>
+            <div class="add-hint" id="addHint">https://host[:port]</div>
         </form>
+    </div>
+
+    <!-- Edit modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Edit Monitor</span>
+                <button type="button" class="modal-close" id="editModalClose" aria-label="Close">&times;</button>
+            </div>
+            <form id="editForm">
+                <div class="add-row">
+                    <div class="type-tabs" id="editTypeTabs">
+                        <button type="button" class="type-tab" data-type="https">HTTPS</button>
+                        <button type="button" class="type-tab" data-type="http">HTTP</button>
+                        <button type="button" class="type-tab" data-type="ping">PING</button>
+                        <button type="button" class="type-tab" data-type="tcp">TCP</button>
+                    </div>
+                    <div class="input-group" id="editInputGroup">
+                        <span class="scheme-prefix" id="editSchemePrefix">https://</span>
+                        <input class="host-input" id="editHostInput" type="text" autocomplete="off" required>
+                        <input class="port-input" id="editPortInput" type="number" placeholder="port" min="1" max="65535">
+                    </div>
+                </div>
+                <label class="ssl-option" id="editSslOption" style="display:none">
+                    <input type="checkbox" id="editIgnoreSslInput">
+                    Ignore SSL certificate errors (self-signed / invalid certs)
+                </label>
+                <div class="add-hint" id="editHint"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="editCancelBtn">Cancel</button>
+                    <button type="submit" class="btn-save" id="editSaveBtn">Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Table -->
@@ -544,13 +691,15 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-    let urlData     = [];
-    let activeType  = 'https';
+    let urlData       = [];
+    let activeType    = 'https';
+    let editActiveType = 'https';
+    let editingId     = null;
 
     // ── Type tab logic ─────────────────────────────────────────────────────
 
     const HINTS = {
-        https: 'https://host[:port] — SSL errors on self-signed certs are handled automatically',
+        https: 'https://host[:port] — enable "Ignore SSL" for self-signed certificates',
         http:  'http://host[:port]',
         ping:  'Enter a hostname or IP address — ICMP ping (no port needed)',
         tcp:   'Enter host and port — raw TCP socket check (e.g. for databases, MQTT, custom services)',
@@ -565,40 +714,87 @@
 
     document.getElementById('typeTabs').addEventListener('click', e => {
         const tab = e.target.closest('.type-tab');
-        if (!tab) return;
+        if (!tab || !tab.closest('#typeTabs')) return;
         activeType = tab.dataset.type;
-        document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('#typeTabs .type-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        updateInputGroup();
+        updateInputGroup('add', activeType);
     });
 
-    function updateInputGroup() {
-        const prefix    = document.getElementById('schemePrefix');
-        const host      = document.getElementById('hostInput');
-        const port      = document.getElementById('portInput');
-        const hint      = document.getElementById('addHint');
+    document.getElementById('editTypeTabs').addEventListener('click', e => {
+        const tab = e.target.closest('.type-tab');
+        if (!tab || !tab.closest('#editTypeTabs')) return;
+        editActiveType = tab.dataset.type;
+        document.querySelectorAll('#editTypeTabs .type-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        updateInputGroup('edit', editActiveType);
+    });
 
-        host.placeholder = PLACEHOLDERS[activeType];
-        hint.textContent  = HINTS[activeType];
+    function updateInputGroup(mode, type) {
+        const isEdit   = mode === 'edit';
+        const prefix   = document.getElementById(isEdit ? 'editSchemePrefix' : 'schemePrefix');
+        const host     = document.getElementById(isEdit ? 'editHostInput' : 'hostInput');
+        const port     = document.getElementById(isEdit ? 'editPortInput' : 'portInput');
+        const hint     = document.getElementById(isEdit ? 'editHint' : 'addHint');
+        const sslOpt   = document.getElementById(isEdit ? 'editSslOption' : 'sslOption');
 
-        if (activeType === 'https' || activeType === 'http') {
+        host.placeholder = PLACEHOLDERS[type];
+        hint.textContent = HINTS[type];
+        sslOpt.style.display = type === 'https' ? 'flex' : 'none';
+
+        if (type === 'https' || type === 'http') {
             prefix.style.display = '';
-            prefix.textContent   = activeType + '://';
+            prefix.textContent   = type + '://';
             host.classList.remove('no-prefix');
+            host.style.borderRadius = '';
             port.style.display   = '';
-        } else if (activeType === 'ping') {
+        } else if (type === 'ping') {
             prefix.style.display = 'none';
             host.classList.add('no-prefix');
             port.style.display   = 'none';
-            // make sure host gets rounded right too when no port
             host.style.borderRadius = '0 8px 8px 0';
         } else {
-            // tcp
             prefix.style.display = 'none';
             host.classList.add('no-prefix');
             host.style.borderRadius = '';
             port.style.display   = '';
         }
+    }
+
+    function buildMonitorUrl(type, host, port) {
+        if (type === 'ping') return host;
+        if (type === 'tcp') return `${host}:${port}`;
+        return port ? `${host}:${port}` : host;
+    }
+
+    function parseMonitorForForm(item) {
+        const type = (item.check_type || 'http').toLowerCase();
+        let host = item.url, port = '';
+
+        if (type === 'ping') {
+            host = item.url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+        } else if (type === 'tcp') {
+            const part = item.url.replace(/^https?:\/\//, '').split('/')[0];
+            const idx = part.lastIndexOf(':');
+            if (idx !== -1) {
+                host = part.slice(0, idx);
+                port = part.slice(idx + 1);
+            }
+        } else {
+            const m = item.url.match(/^https?:\/\/([^/]+)/);
+            if (m) {
+                const hostPort = m[1];
+                const idx = hostPort.lastIndexOf(':');
+                if (idx !== -1) {
+                    host = hostPort.slice(0, idx);
+                    port = hostPort.slice(idx + 1);
+                } else {
+                    host = hostPort;
+                }
+            }
+        }
+
+        return { type, host, port, ignore_ssl: !!item.ignore_ssl };
     }
 
     // ── Fetch & render ─────────────────────────────────────────────────────
@@ -648,12 +844,15 @@
         }
         tbody.innerHTML = urlData.map(item => `
             <tr>
-                <td class="url-cell" title="${item.url}">${item.url}</td>
+                <td class="url-cell" title="${item.url}">
+                    ${item.url}${item.ignore_ssl ? '<span class="ssl-badge">no ssl</span>' : ''}
+                </td>
                 <td>${typeChip(item.check_type)}</td>
                 <td>${badgeHTML(item)}</td>
                 <td class="time-cell">${item.paused ? '—' : (item.last_checked || '—')}</td>
                 <td>
                     <div class="actions">
+                        <button class="btn-action btn-edit" onclick="openEditModal(${item.id})">Edit</button>
                         <button class="btn-action ${item.paused ? 'btn-resume' : 'btn-pause'}"
                             onclick="togglePause(${item.id}, ${!item.paused})">
                             ${item.paused ? 'Resume' : 'Pause'}
@@ -681,24 +880,20 @@
 
         if (!host) { showToast('Host is required', 'error'); return; }
 
-        // Build the URL string to send
-        let url;
-        if (activeType === 'ping') {
-            url = host;
-        } else if (activeType === 'tcp') {
-            if (!port) { showToast('Port is required for TCP checks', 'error'); return; }
-            url = `${host}:${port}`;
-        } else {
-            // http / https — backend will prepend scheme if missing
-            url = port ? `${host}:${port}` : host;
+        if (activeType === 'tcp' && !port) {
+            showToast('Port is required for TCP checks', 'error');
+            return;
         }
+
+        const url = buildMonitorUrl(activeType, host, port);
+        const ignore_ssl = activeType === 'https' && document.getElementById('ignoreSslInput').checked;
 
         btn.disabled = true;
         try {
             const res = await fetch('/api/urls', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ url, check_type: activeType })
+                body: JSON.stringify({ url, check_type: activeType, ignore_ssl })
             });
             const data = await res.json();
             if (!res.ok) { showToast(data.error || 'Error adding monitor', 'error'); }
@@ -706,6 +901,73 @@
                 showToast('Monitor added', 'success');
                 document.getElementById('hostInput').value = '';
                 document.getElementById('portInput').value = '';
+                document.getElementById('ignoreSslInput').checked = false;
+                fetchUrls();
+            }
+        } catch { showToast('Network error', 'error'); }
+        btn.disabled = false;
+    };
+
+    // ── Edit modal ─────────────────────────────────────────────────────────
+
+    function openEditModal(id) {
+        const item = urlData.find(u => u.id === id);
+        if (!item) return;
+
+        editingId = id;
+        const parsed = parseMonitorForForm(item);
+        editActiveType = parsed.type;
+
+        document.querySelectorAll('#editTypeTabs .type-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.type === parsed.type);
+        });
+        document.getElementById('editHostInput').value = parsed.host;
+        document.getElementById('editPortInput').value = parsed.port;
+        document.getElementById('editIgnoreSslInput').checked = parsed.ignore_ssl;
+        updateInputGroup('edit', editActiveType);
+        document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeEditModal() {
+        editingId = null;
+        document.getElementById('editModal').classList.remove('open');
+    }
+
+    document.getElementById('editModalClose').onclick = closeEditModal;
+    document.getElementById('editCancelBtn').onclick = closeEditModal;
+    document.getElementById('editModal').onclick = e => {
+        if (e.target.id === 'editModal') closeEditModal();
+    };
+
+    document.getElementById('editForm').onsubmit = async e => {
+        e.preventDefault();
+        if (!editingId) return;
+
+        const host = document.getElementById('editHostInput').value.trim();
+        const port = document.getElementById('editPortInput').value.trim();
+        const btn  = document.getElementById('editSaveBtn');
+
+        if (!host) { showToast('Host is required', 'error'); return; }
+        if (editActiveType === 'tcp' && !port) {
+            showToast('Port is required for TCP checks', 'error');
+            return;
+        }
+
+        const url = buildMonitorUrl(editActiveType, host, port);
+        const ignore_ssl = editActiveType === 'https' && document.getElementById('editIgnoreSslInput').checked;
+
+        btn.disabled = true;
+        try {
+            const res = await fetch(`/api/urls/${editingId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ url, check_type: editActiveType, ignore_ssl })
+            });
+            const data = await res.json();
+            if (!res.ok) { showToast(data.error || 'Error updating monitor', 'error'); }
+            else {
+                showToast('Monitor updated', 'success');
+                closeEditModal();
                 fetchUrls();
             }
         } catch { showToast('Network error', 'error'); }
@@ -731,7 +993,7 @@
     }
 
     // Init
-    updateInputGroup();
+    updateInputGroup('add', activeType);
     fetchUrls();
     setInterval(fetchUrls, 10000);
 </script>

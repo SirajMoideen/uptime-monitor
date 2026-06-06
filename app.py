@@ -7,6 +7,7 @@ import platform
 import socket
 
 import requests
+from requests.exceptions import ConnectionError, RequestException, SSLError, Timeout
 import psycopg2
 import psycopg2.pool
 from psycopg2.extras import RealDictCursor
@@ -92,6 +93,7 @@ def init_db() -> None:
             for col, defn in [
                 ("paused",     "BOOLEAN NOT NULL DEFAULT FALSE"),
                 ("check_type", "TEXT NOT NULL DEFAULT 'http'"),
+                ("ignore_ssl", "BOOLEAN NOT NULL DEFAULT FALSE"),
             ]:
                 cur.execute(f"""
                     DO $$ BEGIN
@@ -120,24 +122,20 @@ def send_gchat_alert(target: str, detail: str) -> None:
 # ── Check logic ───────────────────────────────────────────────────────────────
 
 def check_http(url: str, verify_ssl: bool = True) -> tuple[str, str]:
-    """HTTP/HTTPS check. Disables SSL verification for private/IP targets."""
+    """HTTP/HTTPS check. Set verify_ssl=False to skip certificate validation."""
     try:
         resp = requests.head(url, timeout=REQUEST_TIMEOUT, allow_redirects=True, verify=verify_ssl)
         if resp.status_code == 405:
             resp = requests.get(url, timeout=REQUEST_TIMEOUT, allow_redirects=True, verify=verify_ssl)
         is_up = 200 <= resp.status_code < 400
         return ("UP" if is_up else "DOWN"), f"HTTP {resp.status_code}"
-    except requests.SSLError:
-        # Retry without SSL verification (self-signed certs on internal hosts)
-        if verify_ssl:
-            log.warning("SSL error for %s — retrying without cert verification", url)
-            return check_http(url, verify_ssl=False)
+    except SSLError:
         return "DOWN", "SSL certificate error"
-    except requests.Timeout:
+    except Timeout:
         return "DOWN", "Connection timed out"
-    except requests.ConnectionError:
+    except ConnectionError:
         return "DOWN", "Connection error / DNS failure"
-    except requests.RequestException as exc:
+    except RequestException as exc:
         return "DOWN", str(exc)
 
 
@@ -176,7 +174,14 @@ def check_tcp(host: str, port: int) -> tuple[str, str]:
         return "DOWN", str(exc)
 
 
-def dispatch_check(url: str, check_type: str) -> tuple[str, str]:
+def normalize_monitor_url(url: str, check_type: str) -> str:
+    check_type = check_type.lower()
+    if check_type in ("http", "https") and not url.startswith(("http://", "https://")):
+        url = f"{check_type}://{url}"
+    return url
+
+
+def dispatch_check(url: str, check_type: str, ignore_ssl: bool = False) -> tuple[str, str]:
     """Route a monitor entry to the correct check function."""
     check_type = check_type.lower()
 
@@ -197,7 +202,7 @@ def dispatch_check(url: str, check_type: str) -> tuple[str, str]:
         return "DOWN", "TCP check requires a port (host:port)"
 
     # Default: http or https
-    return check_http(url)
+    return check_http(url, verify_ssl=not ignore_ssl)
 
 
 # ── Monitor loop ──────────────────────────────────────────────────────────────
@@ -208,14 +213,16 @@ def monitor_loop() -> None:
         try:
             with db_conn() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT id, url, check_type, status, paused FROM urls")
+                    cur.execute(
+                        "SELECT id, url, check_type, status, paused, ignore_ssl FROM urls"
+                    )
                     rows = cur.fetchall()
 
-            for url_id, url, check_type, prev_status, paused in rows:
+            for url_id, url, check_type, prev_status, paused, ignore_ssl in rows:
                 if paused:
                     continue
 
-                new_status, detail = dispatch_check(url, check_type)
+                new_status, detail = dispatch_check(url, check_type, ignore_ssl)
 
                 try:
                     with db_conn() as conn:
@@ -255,7 +262,7 @@ def get_urls():
     with db_conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("""
-                SELECT id, url, check_type, status, paused,
+                SELECT id, url, check_type, status, paused, ignore_ssl,
                        TO_CHAR(last_checked, 'YYYY-MM-DD HH24:MI:SS') AS last_checked
                 FROM urls ORDER BY id DESC
             """)
@@ -265,35 +272,75 @@ def get_urls():
 
 VALID_CHECK_TYPES = {"http", "https", "ping", "tcp"}
 
-@app.route("/api/urls", methods=["POST"])
-def add_url():
-    data       = request.get_json(silent=True) or {}
+
+def _parse_monitor_payload(data: dict) -> tuple[str, str, bool] | tuple[None, str, int]:
     url        = (data.get("url") or "").strip()
     check_type = (data.get("check_type") or "http").strip().lower()
+    ignore_ssl = bool(data.get("ignore_ssl", False))
 
     if not url:
-        return jsonify({"error": "URL / host is required"}), 400
+        return None, "URL / host is required", 400
     if check_type not in VALID_CHECK_TYPES:
-        return jsonify({"error": f"check_type must be one of: {', '.join(sorted(VALID_CHECK_TYPES))}"}), 400
+        return None, f"check_type must be one of: {', '.join(sorted(VALID_CHECK_TYPES))}", 400
+    if check_type != "https":
+        ignore_ssl = False
 
-    # Auto-prepend scheme for http/https if missing
-    if check_type in ("http", "https") and not url.startswith(("http://", "https://")):
-        url = f"{check_type}://{url}"
+    return normalize_monitor_url(url, check_type), check_type, ignore_ssl
+
+
+@app.route("/api/urls", methods=["POST"])
+def add_url():
+    data = request.get_json(silent=True) or {}
+    parsed = _parse_monitor_payload(data)
+    if parsed[0] is None:
+        return jsonify({"error": parsed[1]}), parsed[2]
+
+    url, check_type, ignore_ssl = parsed
 
     try:
         with db_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO urls (url, check_type, status) VALUES (%s, %s, 'PENDING')",
-                    (url, check_type),
+                    "INSERT INTO urls (url, check_type, status, ignore_ssl) VALUES (%s, %s, 'PENDING', %s)",
+                    (url, check_type, ignore_ssl),
                 )
             conn.commit()
-        log.info("Added monitor [%s]: %s", check_type, url)
+        log.info("Added monitor [%s]: %s (ignore_ssl=%s)", check_type, url, ignore_ssl)
         return jsonify({"message": "Added successfully"}), 201
     except psycopg2.errors.UniqueViolation:
         return jsonify({"error": "Already being monitored"}), 409
     except psycopg2.Error as exc:
         log.error("Failed to add URL: %s", exc)
+        return jsonify({"error": "Database error"}), 500
+
+
+@app.route("/api/urls/<int:url_id>", methods=["PUT"])
+def update_url(url_id: int):
+    data = request.get_json(silent=True) or {}
+    parsed = _parse_monitor_payload(data)
+    if parsed[0] is None:
+        return jsonify({"error": parsed[1]}), parsed[2]
+
+    url, check_type, ignore_ssl = parsed
+
+    try:
+        with db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """UPDATE urls
+                       SET url=%s, check_type=%s, ignore_ssl=%s, status='PENDING'
+                       WHERE id=%s RETURNING id""",
+                    (url, check_type, ignore_ssl, url_id),
+                )
+                if not cur.fetchone():
+                    return jsonify({"error": "Not found"}), 404
+            conn.commit()
+        log.info("Updated monitor id=%d [%s]: %s (ignore_ssl=%s)", url_id, check_type, url, ignore_ssl)
+        return jsonify({"message": "Updated successfully"})
+    except psycopg2.errors.UniqueViolation:
+        return jsonify({"error": "Another monitor already uses this endpoint"}), 409
+    except psycopg2.Error as exc:
+        log.error("Failed to update URL id=%d: %s", url_id, exc)
         return jsonify({"error": "Database error"}), 500
 
 

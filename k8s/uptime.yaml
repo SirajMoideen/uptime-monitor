@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uptime-monitor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: uptime-monitor
+  template:
+    metadata:
+      labels:
+        app: uptime-monitor
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: uptime-monitor
+        image: uptime-monitor:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - secretRef:
+            name: uptime-monitor-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: uptime-monitor
+spec:
+  selector:
+    app: uptime-monitor
+  ports:
+  - port: 80
+    targetPort: 5000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: uptime-ingress
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+  - host: uptime.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: uptime-monitor
+            port:
+              number: 80

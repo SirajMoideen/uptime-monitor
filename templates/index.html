@@ -227,43 +227,32 @@
         }
 
         /* no prefix = rounded left too */
-        .host-input.no-prefix { border-radius: 8px 0 0 8px; }
+        .host-input.rounded-right { border-radius: 0 8px 8px 0; }
+        .host-input.full-round { border-radius: 8px; }
 
-        .port-input {
-            width: 86px;
+        .interval-input {
+            width: 110px;
             background: var(--surface2);
             border: 1px solid var(--border);
-            border-left: none;
+            border-radius: 8px;
             padding: 11px 12px;
             color: var(--text);
             font-family: 'Space Mono', monospace;
             font-size: 13px;
             outline: none;
-            transition: border-color .2s;
+            flex-shrink: 0;
         }
-
-        .port-input:focus {
+        .interval-input:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-dim);
         }
 
-        /* last visible input in the group gets rounded right */
-        .input-group > *:last-child {
-            border-radius: 0 8px 8px 0;
-        }
-
-        .port-hint {
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-left: none;
-            border-radius: 0 8px 8px 0;
-            font-family: 'Space Mono', monospace;
+        .interval-label {
             font-size: 11px;
             color: var(--muted);
+            font-family: 'Space Mono', monospace;
             white-space: nowrap;
+            align-self: center;
         }
 
         .btn-add {
@@ -285,11 +274,12 @@
         .btn-add:active { transform: scale(.97); }
         .btn-add:disabled { opacity: .5; cursor: not-allowed; }
 
-        .add-hint {
-            margin-top: 10px;
-            font-size: 11px;
-            color: var(--muted);
-            font-family: 'Space Mono', monospace;
+        .form-options {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+            margin-top: 12px;
         }
 
         /* ── TABLE PANEL ── */
@@ -347,6 +337,27 @@
             font-size: 12px; color: var(--text);
             max-width: 300px;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .url-link {
+            background: none;
+            border: none;
+            padding: 0;
+            font: inherit;
+            color: var(--text);
+            cursor: pointer;
+            text-align: left;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .url-link:hover { color: var(--accent); text-decoration: underline; }
+
+        .interval-cell {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
         }
 
         /* check-type chip */
@@ -466,6 +477,70 @@
             max-width: 560px;
             padding: 24px;
         }
+        .modal.wide { max-width: 720px; }
+
+        .range-tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .range-tab {
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+        .range-tab:hover { color: var(--text); border-color: var(--border2); }
+        .range-tab.active {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .history-meta {
+            font-size: 11px;
+            color: var(--muted);
+            font-family: 'Space Mono', monospace;
+            margin-bottom: 12px;
+        }
+
+        .history-table-wrap {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th {
+            position: sticky;
+            top: 0;
+            background: var(--surface2);
+            padding: 8px 14px;
+            text-align: left;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+        }
+        .history-table td {
+            padding: 8px 14px;
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            border-top: 1px solid var(--border);
+        }
+        .history-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--muted);
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+        }
 
         .modal-header {
             display: flex;
@@ -558,7 +633,7 @@
             .stat-value { font-size: 22px; }
             .add-row { flex-direction: column; }
             thead th:nth-child(3), td:nth-child(3),
-            thead th:nth-child(4), td:nth-child(4) { display: none; }
+            thead th:nth-child(5), td:nth-child(5) { display: none; }
         }
     </style>
 </head>
@@ -616,19 +691,22 @@
                 <!-- Dynamic input group -->
                 <div class="input-group" id="inputGroup">
                     <span class="scheme-prefix" id="schemePrefix">https://</span>
-                    <input class="host-input" id="hostInput" type="text"
-                           placeholder="192.168.0.100 or example.com" autocomplete="off" required>
-                    <input class="port-input" id="portInput" type="number"
-                           placeholder="port" min="1" max="65535">
+                    <input class="host-input rounded-right" id="hostInput" type="text"
+                           placeholder="192.168.0.100:8081" autocomplete="off" required>
                 </div>
+
+                <span class="interval-label">every</span>
+                <input class="interval-input" id="intervalInput" type="number"
+                       value="60" min="5" max="86400" title="Check interval in seconds">
 
                 <button class="btn-add" type="submit" id="addBtn">+ Add Monitor</button>
             </div>
-            <label class="ssl-option" id="sslOption" style="display:none">
-                <input type="checkbox" id="ignoreSslInput">
-                Ignore SSL certificate errors (self-signed / invalid certs)
-            </label>
-            <div class="add-hint" id="addHint">https://host[:port]</div>
+            <div class="form-options">
+                <label class="ssl-option" id="sslOption" style="display:none; margin-top:0">
+                    <input type="checkbox" id="ignoreSslInput">
+                    Ignore SSL certificate errors
+                </label>
+            </div>
         </form>
     </div>
 
@@ -649,20 +727,45 @@
                     </div>
                     <div class="input-group" id="editInputGroup">
                         <span class="scheme-prefix" id="editSchemePrefix">https://</span>
-                        <input class="host-input" id="editHostInput" type="text" autocomplete="off" required>
-                        <input class="port-input" id="editPortInput" type="number" placeholder="port" min="1" max="65535">
+                        <input class="host-input rounded-right" id="editHostInput" type="text"
+                               placeholder="192.168.0.100:8081" autocomplete="off" required>
                     </div>
+                    <span class="interval-label">every</span>
+                    <input class="interval-input" id="editIntervalInput" type="number"
+                           value="60" min="5" max="86400">
                 </div>
-                <label class="ssl-option" id="editSslOption" style="display:none">
-                    <input type="checkbox" id="editIgnoreSslInput">
-                    Ignore SSL certificate errors (self-signed / invalid certs)
-                </label>
-                <div class="add-hint" id="editHint"></div>
+                <div class="form-options">
+                    <label class="ssl-option" id="editSslOption" style="display:none; margin-top:0">
+                        <input type="checkbox" id="editIgnoreSslInput">
+                        Ignore SSL certificate errors
+                    </label>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" id="editCancelBtn">Cancel</button>
                     <button type="submit" class="btn-save" id="editSaveBtn">Save Changes</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- History modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal wide">
+            <div class="modal-header">
+                <span class="modal-title" id="historyModalTitle">Check History</span>
+                <button type="button" class="modal-close" id="historyModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="range-tabs" id="historyRangeTabs">
+                <button type="button" class="range-tab" data-range="15m">15 min</button>
+                <button type="button" class="range-tab" data-range="30m">30 min</button>
+                <button type="button" class="range-tab active" data-range="1d">1 day</button>
+                <button type="button" class="range-tab" data-range="7d">7 days</button>
+                <button type="button" class="range-tab" data-range="30d">30 days</button>
+            </div>
+            <div class="history-meta" id="historyMeta"></div>
+            <div class="history-table-wrap" id="historyTableWrap">
+                <div class="history-empty">Loading...</div>
+            </div>
         </div>
     </div>
 
@@ -677,6 +780,7 @@
                 <tr>
                     <th>Endpoint</th>
                     <th>Type</th>
+                    <th>Interval</th>
                     <th>Status</th>
                     <th>Last Check</th>
                     <th>Actions</th>
@@ -691,26 +795,35 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-    let urlData       = [];
-    let activeType    = 'https';
+    let urlData        = [];
+    let activeType     = 'https';
     let editActiveType = 'https';
-    let editingId     = null;
-
-    // ── Type tab logic ─────────────────────────────────────────────────────
-
-    const HINTS = {
-        https: 'https://host[:port] — enable "Ignore SSL" for self-signed certificates',
-        http:  'http://host[:port]',
-        ping:  'Enter a hostname or IP address — ICMP ping (no port needed)',
-        tcp:   'Enter host and port — raw TCP socket check (e.g. for databases, MQTT, custom services)',
-    };
+    let editingId      = null;
+    let historyId      = null;
+    let historyRange   = '1d';
 
     const PLACEHOLDERS = {
-        https: '192.168.0.100 or example.com',
-        http:  '192.168.0.100 or example.com',
-        ping:  '192.168.0.100 or hostname',
-        tcp:   '192.168.0.100 or hostname',
+        https: '192.168.0.100:8081',
+        http:  '192.168.0.100:8080',
+        ping:  '192.168.0.100',
+        tcp:   '192.168.0.100:5432',
     };
+
+    function esc(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function formatInterval(sec) {
+        sec = Number(sec) || 60;
+        if (sec < 60) return sec + 's';
+        if (sec < 3600) return Math.round(sec / 60) + 'm';
+        if (sec < 86400) return Math.round(sec / 3600) + 'h';
+        return Math.round(sec / 86400) + 'd';
+    }
 
     document.getElementById('typeTabs').addEventListener('click', e => {
         const tab = e.target.closest('.type-tab');
@@ -731,70 +844,45 @@
     });
 
     function updateInputGroup(mode, type) {
-        const isEdit   = mode === 'edit';
-        const prefix   = document.getElementById(isEdit ? 'editSchemePrefix' : 'schemePrefix');
-        const host     = document.getElementById(isEdit ? 'editHostInput' : 'hostInput');
-        const port     = document.getElementById(isEdit ? 'editPortInput' : 'portInput');
-        const hint     = document.getElementById(isEdit ? 'editHint' : 'addHint');
-        const sslOpt   = document.getElementById(isEdit ? 'editSslOption' : 'sslOption');
+        const isEdit = mode === 'edit';
+        const prefix = document.getElementById(isEdit ? 'editSchemePrefix' : 'schemePrefix');
+        const host   = document.getElementById(isEdit ? 'editHostInput' : 'hostInput');
+        const sslOpt = document.getElementById(isEdit ? 'editSslOption' : 'sslOption');
 
         host.placeholder = PLACEHOLDERS[type];
-        hint.textContent = HINTS[type];
         sslOpt.style.display = type === 'https' ? 'flex' : 'none';
 
         if (type === 'https' || type === 'http') {
             prefix.style.display = '';
             prefix.textContent   = type + '://';
-            host.classList.remove('no-prefix');
-            host.style.borderRadius = '';
-            port.style.display   = '';
-        } else if (type === 'ping') {
-            prefix.style.display = 'none';
-            host.classList.add('no-prefix');
-            port.style.display   = 'none';
-            host.style.borderRadius = '0 8px 8px 0';
+            host.classList.remove('full-round');
+            host.classList.add('rounded-right');
         } else {
             prefix.style.display = 'none';
-            host.classList.add('no-prefix');
-            host.style.borderRadius = '';
-            port.style.display   = '';
+            host.classList.remove('rounded-right');
+            host.classList.add('full-round');
         }
-    }
-
-    function buildMonitorUrl(type, host, port) {
-        if (type === 'ping') return host;
-        if (type === 'tcp') return `${host}:${port}`;
-        return port ? `${host}:${port}` : host;
     }
 
     function parseMonitorForForm(item) {
         const type = (item.check_type || 'http').toLowerCase();
-        let host = item.url, port = '';
+        let target = item.url;
 
         if (type === 'ping') {
-            host = item.url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
-        } else if (type === 'tcp') {
-            const part = item.url.replace(/^https?:\/\//, '').split('/')[0];
-            const idx = part.lastIndexOf(':');
-            if (idx !== -1) {
-                host = part.slice(0, idx);
-                port = part.slice(idx + 1);
-            }
+            target = item.url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+        } else if (type === 'http' || type === 'https') {
+            const m = item.url.match(/^https?:\/\/(.+)/);
+            target = m ? m[1] : item.url;
         } else {
-            const m = item.url.match(/^https?:\/\/([^/]+)/);
-            if (m) {
-                const hostPort = m[1];
-                const idx = hostPort.lastIndexOf(':');
-                if (idx !== -1) {
-                    host = hostPort.slice(0, idx);
-                    port = hostPort.slice(idx + 1);
-                } else {
-                    host = hostPort;
-                }
-            }
+            target = item.url.replace(/^https?:\/\//, '').split('/')[0];
         }
 
-        return { type, host, port, ignore_ssl: !!item.ignore_ssl };
+        return {
+            type,
+            target,
+            ignore_ssl: !!item.ignore_ssl,
+            interval: item.check_interval_seconds || 60,
+        };
     }
 
     // ── Fetch & render ─────────────────────────────────────────────────────
@@ -834,7 +922,7 @@
     function renderTable() {
         const tbody = document.getElementById('urlList');
         if (!urlData.length) {
-            tbody.innerHTML = `<tr><td colspan="5">
+            tbody.innerHTML = `<tr><td colspan="6">
                 <div class="empty-state">
                     <div class="empty-icon">◉</div>
                     <div class="empty-title">No monitors yet</div>
@@ -844,12 +932,14 @@
         }
         tbody.innerHTML = urlData.map(item => `
             <tr>
-                <td class="url-cell" title="${item.url}">
-                    ${item.url}${item.ignore_ssl ? '<span class="ssl-badge">no ssl</span>' : ''}
+                <td class="url-cell">
+                    <button class="url-link" title="${esc(item.url)}" onclick="openHistoryModal(${item.id})">
+                        ${esc(item.url)}</button>${item.ignore_ssl ? '<span class="ssl-badge">no ssl</span>' : ''}
                 </td>
                 <td>${typeChip(item.check_type)}</td>
+                <td class="interval-cell">every ${formatInterval(item.check_interval_seconds)}</td>
                 <td>${badgeHTML(item)}</td>
-                <td class="time-cell">${item.paused ? '—' : (item.last_checked || '—')}</td>
+                <td class="time-cell">${item.paused ? '—' : esc(item.last_checked || '—')}</td>
                 <td>
                     <div class="actions">
                         <button class="btn-action btn-edit" onclick="openEditModal(${item.id})">Edit</button>
@@ -874,18 +964,16 @@
 
     document.getElementById('addForm').onsubmit = async e => {
         e.preventDefault();
-        const host = document.getElementById('hostInput').value.trim();
-        const port = document.getElementById('portInput').value.trim();
+        const target = document.getElementById('hostInput').value.trim();
+        const interval = parseInt(document.getElementById('intervalInput').value, 10);
         const btn  = document.getElementById('addBtn');
 
-        if (!host) { showToast('Host is required', 'error'); return; }
-
-        if (activeType === 'tcp' && !port) {
-            showToast('Port is required for TCP checks', 'error');
+        if (!target) { showToast('Endpoint is required', 'error'); return; }
+        if (activeType === 'tcp' && !target.includes(':')) {
+            showToast('TCP checks need host:port (e.g. 192.168.0.100:5432)', 'error');
             return;
         }
 
-        const url = buildMonitorUrl(activeType, host, port);
         const ignore_ssl = activeType === 'https' && document.getElementById('ignoreSslInput').checked;
 
         btn.disabled = true;
@@ -893,14 +981,19 @@
             const res = await fetch('/api/urls', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ url, check_type: activeType, ignore_ssl })
+                body: JSON.stringify({
+                    url: target,
+                    check_type: activeType,
+                    ignore_ssl,
+                    check_interval_seconds: interval,
+                })
             });
             const data = await res.json();
             if (!res.ok) { showToast(data.error || 'Error adding monitor', 'error'); }
             else {
-                showToast('Monitor added', 'success');
+                const label = data.status ? `Monitor added — ${data.status}` : 'Monitor added';
+                showToast(label, 'success');
                 document.getElementById('hostInput').value = '';
-                document.getElementById('portInput').value = '';
                 document.getElementById('ignoreSslInput').checked = false;
                 fetchUrls();
             }
@@ -921,8 +1014,8 @@
         document.querySelectorAll('#editTypeTabs .type-tab').forEach(t => {
             t.classList.toggle('active', t.dataset.type === parsed.type);
         });
-        document.getElementById('editHostInput').value = parsed.host;
-        document.getElementById('editPortInput').value = parsed.port;
+        document.getElementById('editHostInput').value = parsed.target;
+        document.getElementById('editIntervalInput').value = parsed.interval;
         document.getElementById('editIgnoreSslInput').checked = parsed.ignore_ssl;
         updateInputGroup('edit', editActiveType);
         document.getElementById('editModal').classList.add('open');
@@ -943,17 +1036,16 @@
         e.preventDefault();
         if (!editingId) return;
 
-        const host = document.getElementById('editHostInput').value.trim();
-        const port = document.getElementById('editPortInput').value.trim();
+        const target = document.getElementById('editHostInput').value.trim();
+        const interval = parseInt(document.getElementById('editIntervalInput').value, 10);
         const btn  = document.getElementById('editSaveBtn');
 
-        if (!host) { showToast('Host is required', 'error'); return; }
-        if (editActiveType === 'tcp' && !port) {
-            showToast('Port is required for TCP checks', 'error');
+        if (!target) { showToast('Endpoint is required', 'error'); return; }
+        if (editActiveType === 'tcp' && !target.includes(':')) {
+            showToast('TCP checks need host:port (e.g. 192.168.0.100:5432)', 'error');
             return;
         }
 
-        const url = buildMonitorUrl(editActiveType, host, port);
         const ignore_ssl = editActiveType === 'https' && document.getElementById('editIgnoreSslInput').checked;
 
         btn.disabled = true;
@@ -961,7 +1053,12 @@
             const res = await fetch(`/api/urls/${editingId}`, {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ url, check_type: editActiveType, ignore_ssl })
+                body: JSON.stringify({
+                    url: target,
+                    check_type: editActiveType,
+                    ignore_ssl,
+                    check_interval_seconds: interval,
+                })
             });
             const data = await res.json();
             if (!res.ok) { showToast(data.error || 'Error updating monitor', 'error'); }
@@ -973,6 +1070,75 @@
         } catch { showToast('Network error', 'error'); }
         btn.disabled = false;
     };
+
+    // ── History modal ──────────────────────────────────────────────────────
+
+    function openHistoryModal(id) {
+        historyId = id;
+        historyRange = '1d';
+        document.querySelectorAll('#historyRangeTabs .range-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.range === historyRange);
+        });
+        document.getElementById('historyModal').classList.add('open');
+        loadHistory();
+    }
+
+    function closeHistoryModal() {
+        historyId = null;
+        document.getElementById('historyModal').classList.remove('open');
+    }
+
+    document.getElementById('historyModalClose').onclick = closeHistoryModal;
+    document.getElementById('historyModal').onclick = e => {
+        if (e.target.id === 'historyModal') closeHistoryModal();
+    };
+
+    document.getElementById('historyRangeTabs').addEventListener('click', e => {
+        const tab = e.target.closest('.range-tab');
+        if (!tab || !historyId) return;
+        historyRange = tab.dataset.range;
+        document.querySelectorAll('#historyRangeTabs .range-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.range === historyRange);
+        });
+        loadHistory();
+    });
+
+    async function loadHistory() {
+        if (!historyId) return;
+        const wrap = document.getElementById('historyTableWrap');
+        wrap.innerHTML = '<div class="history-empty">Loading...</div>';
+
+        try {
+            const res = await fetch(`/api/urls/${historyId}/history?range=${historyRange}`);
+            const data = await res.json();
+            if (!res.ok) {
+                wrap.innerHTML = `<div class="history-empty">${esc(data.error || 'Failed to load')}</div>`;
+                return;
+            }
+
+            document.getElementById('historyModalTitle').textContent = 'History — ' + data.url;
+            const trunc = data.truncated ? ` (showing latest ${data.history.length} of ${data.total})` : '';
+            document.getElementById('historyMeta').textContent =
+                `${data.total} check${data.total !== 1 ? 's' : ''} in selected range${trunc}`;
+
+            if (!data.history.length) {
+                wrap.innerHTML = '<div class="history-empty">No checks recorded in this range yet</div>';
+                return;
+            }
+
+            wrap.innerHTML = `<table class="history-table">
+                <thead><tr><th>Time</th><th>Status</th><th>Detail</th></tr></thead>
+                <tbody>${data.history.map(row => `
+                    <tr>
+                        <td>${esc(row.checked_at)}</td>
+                        <td>${esc(row.status)}</td>
+                        <td>${esc(row.detail || '—')}</td>
+                    </tr>`).join('')}
+                </tbody></table>`;
+        } catch {
+            wrap.innerHTML = '<div class="history-empty">Network error</div>';
+        }
+    }
 
     // ── Actions ────────────────────────────────────────────────────────────
 

@@ -3,8 +3,6 @@ kind: Ingress
 metadata:
   name: uptime-ingress
   namespace: uptime-monitor
-  annotations:
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 
 spec:
   ingressClassName: nginx

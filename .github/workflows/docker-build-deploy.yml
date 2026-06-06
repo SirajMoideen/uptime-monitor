@@ -1,0 +1,51 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
+            -u "${{ secrets.GHCR_USERNAME }}" \
+            --password-stdin
+
+      - name: Build and Push
+        run: |
+          docker build \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime-monitor:${{ github.sha }} .
+
+          docker push \
+            ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime-monitor:${{ github.sha }}
+
+      - name: Update GitOps Repo
+        run: |
+          git clone https://sirajmoideen:${{ secrets.GITOPS_PAT }}@github.com/sirajmoideen/uptime-monitor-gitops.git
+
+          cd uptime-monitor-gitops
+
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            FILE=environments/dev/values.yaml
+          else
+            FILE=environments/prod/values.yaml
+          fi
+
+          sed -i "/tag:/c\  tag: ${GITHUB_SHA}" "$FILE"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add "$FILE"
+          git commit -m "Update image tag to ${GITHUB_SHA}" || true
+
+          git push origin main

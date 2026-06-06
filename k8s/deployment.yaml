@@ -13,6 +13,8 @@ spec:
       labels:
         app: uptime-monitor
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: uptime-monitor
         image: uptime-monitor:latest

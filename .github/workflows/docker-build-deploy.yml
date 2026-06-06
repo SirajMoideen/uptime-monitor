@@ -3,8 +3,8 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - main
       - dev
+      - main
 
 jobs:
   build-and-deploy:
@@ -20,17 +20,22 @@ jobs:
             -u "${{ secrets.GHCR_USERNAME }}" \
             --password-stdin
 
-      - name: Build and Push
+      - name: Build Docker Image
         run: |
           docker build \
-            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime-monitor:${{ github.sha }} .
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime-monitor:${{ github.sha }} \
+            .
 
+      - name: Push Docker Image
+        run: |
           docker push \
             ghcr.io/${{ secrets.GHCR_USERNAME }}/uptime-monitor:${{ github.sha }}
 
-      - name: Update GitOps Repo
+      - name: Update GitOps Repository
+        env:
+          GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
         run: |
-          git clone https://sirajmoideen:${{ secrets.GITOPS_PAT }}@github.com/sirajmoideen/uptime-monitor-gitops.git
+          git clone https://sirajmoideen:${GITOPS_PAT}@github.com/sirajmoideen/uptime-monitor-gitops.git
 
           cd uptime-monitor-gitops
 

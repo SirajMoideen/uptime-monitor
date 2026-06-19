@@ -2,7 +2,7 @@
 
 A lightweight uptime monitoring application with a web UI. Checks HTTP/HTTPS, ICMP ping, and TCP targets, stores check history in PostgreSQL, and sends optional Google Chat alerts on failures.
 
-Built as a **personal showcase project** to demonstrate end-to-end application development, containerization, CI/CD, and GitOps-based Kubernetes deployment.
+Built as a **personal showcase project** to demonstrate end-to-end application development, containerization, CI/CD, GitOps-based Kubernetes deployment, and full **metrics + logging** observability on a private Kind lab.
 
 > **Note:** This is a personal lab setup, not a production-grade deployment. Both dev and prod environments auto-deploy on push for convenience and demonstration purposes. In a real production environment, prod releases would typically require manual approval, staged rollouts, and stricter change control.
 
@@ -20,12 +20,13 @@ Built as a **personal showcase project** to demonstrate end-to-end application d
 
 ## Architecture
 
-The project spans two repositories:
+The project spans three repositories:
 
 | Repository | Purpose |
 | :--- | :--- |
 | [**uptime-monitor**](https://github.com/SirajMoideen/uptime-monitor) | Application source code, Dockerfile, and CI/CD workflows |
 | [**uptime-monitor-gitops**](https://github.com/SirajMoideen/uptime-monitor-gitops) | Helm chart, ArgoCD Application manifests, and per-environment values |
+| [**kind-platform**](https://github.com/SirajMoideen/kind-platform) | Kind cluster bootstrap, ingress, Prometheus/Grafana, and Elasticsearch/Kibana/Filebeat GitOps |
 
 ```mermaid
 flowchart LR
@@ -41,6 +42,15 @@ flowchart LR
         ProdVals[prod/values.yaml]
     end
 
+    subgraph infra_repo ["kind-platform"]
+        Kind[Kind Cluster]
+        Prom[Prometheus]
+        Graf[Grafana]
+        ES[Elasticsearch]
+        Kib[Kibana]
+        FB[Filebeat]
+    end
+
     subgraph cluster ["Kubernetes Cluster"]
         ArgoCD[ArgoCD]
         DevNS[uptime-monitor-dev]
@@ -54,10 +64,19 @@ flowchart LR
     Helm --> ArgoCD
     DevVals --> ArgoCD
     ProdVals --> ArgoCD
+    Kind --> ArgoCD
     ArgoCD -->|auto-sync| DevNS
     ArgoCD -->|auto-sync| ProdNS
+    ArgoCD --> Prom
+    ArgoCD --> Graf
+    ArgoCD --> ES
+    ArgoCD --> Kib
+    ArgoCD --> FB
     GHCR --> DevNS
     GHCR --> ProdNS
+    FB -->|ship logs| ES
+    Kib --> ES
+    Graf --> Prom
 ```
 
 ### Environments
@@ -105,7 +124,32 @@ uptime-monitor-gitops/
 
 ## Observability
 
-Prometheus and Grafana integration for this stack is **in progress**. Related monitoring dashboards and PromQL reference queries live in the [SRE Runbooks](https://github.com/SirajMoideen/sre-runbooks) repository under `prometheus-grafana-dashboards/`.
+Metrics and logging run on the same Kind cluster as the app, deployed via ArgoCD from [kind-platform](https://github.com/SirajMoideen/kind-platform).
+
+### Metrics stack
+
+| Component | Namespace | Ingress |
+| :--- | :--- | :--- |
+| Prometheus | `monitoring` | `http://prometheus.local` |
+| Grafana | `monitoring` | `http://grafana.local` |
+
+Grafana is pre-wired with a Prometheus datasource. Reference dashboards and PromQL queries live in the [SRE Runbooks](https://github.com/SirajMoideen/sre-runbooks) repository under `prometheus-grafana-dashboards/`.
+
+### Logging stack
+
+| Component | Namespace | Ingress |
+| :--- | :--- | :--- |
+| Elasticsearch | `logging` | internal |
+| Kibana | `logging` | `http://kibana.local` |
+| Filebeat | `logging` | DaemonSet — ships container logs to Elasticsearch |
+
+Add these hosts to `/etc/hosts` on your machine (alongside app ingress hosts):
+
+```text
+127.0.0.1 prometheus.local grafana.local kibana.local
+```
+
+For cluster bootstrap, health checks, and day-to-day ops, see the [kind-platform SOP](https://github.com/SirajMoideen/kind-platform#readme).
 
 ---
 
@@ -156,13 +200,16 @@ Open [http://localhost:5000](http://localhost:5000) in your browser.
 - **Container:** Docker (Alpine-based image)
 - **CI/CD:** GitHub Actions (self-hosted runner)
 - **Registry:** GitHub Container Registry (GHCR)
-- **Deployment:** Kubernetes, Helm, ArgoCD (GitOps)
-- **Observability:** Prometheus + Grafana *(in progress)*
+- **Deployment:** Kubernetes (Kind), Helm, ArgoCD (GitOps)
+- **Metrics:** Prometheus, Grafana (via [kind-platform](https://github.com/SirajMoideen/kind-platform))
+- **Logging:** Elasticsearch, Kibana, Filebeat (via [kind-platform](https://github.com/SirajMoideen/kind-platform))
 
 ---
 
 ## Related Projects
 
+- [**kind-platform**](https://github.com/SirajMoideen/kind-platform) — Kind cluster, ingress, Prometheus/Grafana, and Elasticsearch/Kibana/Filebeat GitOps SOP
+- [**uptime-monitor-gitops**](https://github.com/SirajMoideen/uptime-monitor-gitops) — Helm chart and ArgoCD application manifests for dev/prod
 - [**SRE Runbooks & Automation Toolkit**](https://github.com/SirajMoideen/sre-runbooks) — Production runbooks, GCP automation scripts, and monitoring dashboards used alongside this project
 
 ---
